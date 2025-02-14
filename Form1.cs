@@ -7,7 +7,7 @@ namespace blog
     public partial class Form1 : Form
     {
         private MySqlConnection connection;
-        private string loggedInUser = "";
+        private int loggedInUserId = -1; // Felhasználó ID (alapértelmezett -1, ha nincs bejelentkezve)
 
         public Form1()
         {
@@ -35,7 +35,7 @@ namespace blog
             try
             {
                 connection.Open();
-                string query = "SELECT * FROM UserTable WHERE UserName = @username AND Password = @password";
+                string query = "SELECT Id FROM UserTable WHERE UserName = @username AND Password = @password";
 
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@username", username);
@@ -45,14 +45,14 @@ namespace blog
 
                 if (reader.Read())
                 {
-                    loggedInUser = username;
+                    loggedInUserId = reader.GetInt32(0); // Az ID oszlop első értéke
                     MessageBox.Show("Sikeres bejelentkezés!", "Üdvözöljük", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     reader.Close();
                     this.Hide();
-                    Form2 form2 = new Form2(loggedInUser); 
+                    Form2 form2 = new Form2(loggedInUserId); // <-- Most már int-et adunk át!
                     form2.ShowDialog();
-                    this.Close(); 
+                    this.Close();
                 }
                 else
                 {
