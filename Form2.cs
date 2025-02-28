@@ -1,89 +1,49 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace blog
 {
     public partial class Form2 : Form
     {
-        private string connectionString = "Server=localhost;Database=Blog;Uid=root;Pwd=;"; // Állítsd be a saját MySQL adataidat!
-        private int loggedInUserId; // Az aktuálisan bejelentkezett felhasználó ID-je
-
-        public Form2(int userId)
+        public Form2()
         {
             InitializeComponent();
-            loggedInUserId = userId;
-            LoadComments();
         }
 
-        private void LoadComments()
+        private const string ConnectionString = "Server=localhost;Database=blog;Uid=root;Password=;SslMode=None";
+        private string AddNexBlogger(string username, string email, string password)
         {
-            listBox1.Items.Clear();
-
-            using (MySqlConnection conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                string query = "SELECT BlogTable.Comment, UserTable.UserName FROM BlogTable " +
-                               "JOIN UserTable ON BlogTable.UserId = UserTable.Id " +
-                               "ORDER BY BlogTable.Id DESC";
-                using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                using (MySqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        string comment = $"{reader["UserName"]}: {reader["Comment"]}";
-                        listBox1.Items.Add(comment);
-                    }
-                }
-            }
-        }
-
-        private void btnSubmit_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(textBox1.Text)) // <-- textBox1 használata
-            {
-                MessageBox.Show("A hozzászólás nem lehet üres!", "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             try
             {
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = "INSERT INTO BlogTable (Title, Comment, UserId) VALUES (@title, @comment, @userId)";
-                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@title", "N/A"); // Ha nincs szükség címre, alapértelmezett érték
-                        cmd.Parameters.AddWithValue("@comment", textBox1.Text);
-                        cmd.Parameters.AddWithValue("@userId", loggedInUserId); // Ellenőrizd, hogy az userId helyesen van beállítva!
+                string sql = "INSERT INTO usertable(UserName, Email, Password) VALUES (@username,@email,@password)";
 
-                        int rowsAffected = cmd.ExecuteNonQuery();
-                        if (rowsAffected > 0)
-                        {
-                            MessageBox.Show("Komment hozzáadva!", "Siker", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            textBox1.Clear();
-                            LoadComments(); // Frissíti a listát
-                        }
-                        else
-                        {
-                            MessageBox.Show("Nem sikerült a komment hozzáadása!", "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+                using (var connection = new MySqlConnection(ConnectionString))
+                {
+                    connection.Open();
+
+                    using (var command = new MySqlCommand(sql, connection))
+                    {
+                        command.Parameters.AddWithValue("@username", username);
+                        command.Parameters.AddWithValue("@email", email);
+                        command.Parameters.AddWithValue("@password", password);
+
+                        command.ExecuteNonQuery();
                     }
+
+                    connection.Close();
+                    this.Close();
+                    return "Sikeres regisztráció.";
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Hiba történt: " + ex.Message, "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return ex.Message;
             }
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(AddNexBlogger(textBox5.Text, textBox6.Text, textBox7.Text));
         }
     }
 }

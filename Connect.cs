@@ -1,42 +1,29 @@
-﻿using MySql.Data.MySqlClient;
+﻿
 
-namespace blogg
+using MySql.Data.MySqlClient;
+
+namespace blog
 {
     public class Connect
     {
-        private MySqlConnection connection;
-        private string connectionString;
+        public MySqlConnection Connection;
+        public string Host;
+        public string Database;
+        public string User;
+        public string Password;
+        public string ConnectionString;
 
         public Connect()
         {
-            string host = "localhost";
-            string database = "Blog";
-            string user = "root";
-            string password = "";
+            Host = "localhost";
+            Database = "blog";
+            User = "root";
+            Password = "";
 
-            connectionString = $"SERVER={host};DATABASE={database};UID={user};PASSWORD={password};SslMode=None";
-            connection = new MySqlConnection(connectionString);
+            ConnectionString = "SERVER=" + Host + ";DATABASE=" + Database + ";UID=" + User + ";PASSWORD=" + Password + ";SslMode=None";
+
+            Connection = new MySqlConnection(ConnectionString);
         }
 
-        public void OpenConnection()
-        {
-            if (connection.State == System.Data.ConnectionState.Closed)
-            {
-                connection.Open();
-            }
-        }
-
-        public void CloseConnection()
-        {
-            if (connection.State == System.Data.ConnectionState.Open)
-            {
-                connection.Close();
-            }
-        }
-
-        public MySqlConnection GetConnection()
-        {
-            return connection;
-        }
     }
 }

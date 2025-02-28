@@ -1,118 +1,75 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Windows.Forms;
-using MySql.Data.MySqlClient;
 
 namespace blog
 {
     public partial class Form1 : Form
     {
-        private MySqlConnection connection;
-        private int loggedInUserId = -1; // Felhasználó ID (alapértelmezett -1, ha nincs bejelentkezve)
-
         public Form1()
         {
             InitializeComponent();
-            InitializeDatabaseConnection();
         }
 
-        private void InitializeDatabaseConnection()
+        private const string ConnectionString = "Server=localhost;Database=blog;Uid=root;Password=;SslMode=None";
+
+
+        private bool beleptet(string username, string password)
         {
-            string connectionString = "SERVER=localhost;DATABASE=Blog;UID=root;PASSWORD=;SslMode=None";
-            connection = new MySqlConnection(connectionString);
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            string username = textBox3.Text.Trim();
-            string password = textBox4.Text.Trim();
-
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
-            {
-                MessageBox.Show("Kérlek töltsd ki mindkét mezőt!", "Figyelmeztetés", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             try
             {
-                connection.Open();
-                string query = "SELECT Id FROM UserTable WHERE UserName = @username AND Password = @password";
-
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                cmd.Parameters.AddWithValue("@username", username);
-                cmd.Parameters.AddWithValue("@password", password);
-
-                MySqlDataReader reader = cmd.ExecuteReader();
-
-                if (reader.Read())
+                using (var connection = new MySqlConnection(ConnectionString))
                 {
-                    loggedInUserId = reader.GetInt32(0); // Az ID oszlop első értéke
-                    MessageBox.Show("Sikeres bejelentkezés!", "Üdvözöljük", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    connection.Open();
+                    string sql = "SELECT Id FROM usertable WHERE UserName = @username AND Password= @password";
 
-                    reader.Close();
-                    this.Hide();
-                    Form2 form2 = new Form2(loggedInUserId); // <-- Most már int-et adunk át!
-                    form2.ShowDialog();
-                    this.Close();
+                    MySqlCommand cmd = new MySqlCommand(sql, connection);
+                    cmd.Parameters.AddWithValue("@username", username);
+                    cmd.Parameters.AddWithValue("@password", password);
+
+                    MySqlDataReader dr = cmd.ExecuteReader();
+                    bool van = dr.Read();
+                    if (van)
+                    {
+                        UserId.Id = dr.GetInt32(0);
+                    }
+                    connection.Close();
+                    return van;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+        }
+        private void button1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (beleptet(textBox3.Text, textBox4.Text))
+                {
+                    MessageBox.Show("udvozoljuk!");
+                    Form3 form3 = new Form3();
+                    form3.ShowDialog();
                 }
                 else
                 {
-                    MessageBox.Show("Hibás felhasználónév vagy jelszó!", "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Form2 form2 = new Form2();
+                    form2.ShowDialog();
                 }
-
-                reader.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Hiba történt: " + ex.Message, "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
 
-        private void button3_Click(object sender, EventArgs e)
+                MessageBox.Show(ex.Message);
+            }
+
+        }
+        public static class UserId
         {
-            string username = textBox5.Text.Trim();
-            string email = textBox6.Text.Trim();
-            string password = textBox7.Text.Trim();
-
-            try
-            {
-                connection.Open();
-
-                string checkQuery = "SELECT COUNT(*) FROM UserTable WHERE UserName = @username";
-                MySqlCommand checkCmd = new MySqlCommand(checkQuery, connection);
-                checkCmd.Parameters.AddWithValue("@username", username);
-                int userExists = Convert.ToInt32(checkCmd.ExecuteScalar());
-
-                if (userExists > 0)
-                {
-                    MessageBox.Show("Ez a felhasználónév már foglalt!", "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                string insertQuery = "INSERT INTO UserTable (UserName, Email, Password) VALUES (@username, @email, @password)";
-                MySqlCommand insertCmd = new MySqlCommand(insertQuery, connection);
-                insertCmd.Parameters.AddWithValue("@username", username);
-                insertCmd.Parameters.AddWithValue("@email", email);
-                insertCmd.Parameters.AddWithValue("@password", password);
-                insertCmd.ExecuteNonQuery();
-
-                MessageBox.Show("Sikeres regisztráció! Most bejelentkezhetsz.", "Üdvözöljük", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                textBox5.Clear();
-                textBox6.Clear();
-                textBox7.Clear();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Hiba történt: " + ex.Message, "Hiba", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                connection.Close();
-            }
+            public static int Id { get; set; }
         }
+
     }
 }
